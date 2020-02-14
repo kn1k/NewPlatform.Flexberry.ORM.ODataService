@@ -337,7 +337,7 @@
             {
                 ExternalLangDef.LanguageDef.DataService = args.DataService;
 
-                DateTime date = DateTime.UtcNow;
+                DateTime date = DateTime.UtcNow.AddDays(-1);
                 КлассСМножествомТипов класс = new КлассСМножествомТипов() { PropertyEnum = Цифра.Семь, PropertyDateTime = date };
                 var objs = new DataObject[] { класс };
                 args.DataService.UpdateObjects(ref objs);

@@ -17,7 +17,7 @@
 
     using Unity;
 
-    using Action = NewPlatform.Flexberry.ORM.ODataService.Functions.Action;
+    using Action = Functions.Action;
 
     /// <summary>
     /// EDM-модель, которая строится на основе сборок с объектами данных (унаследованными от <see cref="DataObject"/>).
@@ -201,21 +201,22 @@
                         string[] enumNames = Enum.GetNames(propertyType);
                         for (int i = 0; i < enumNames.Length; i++)
                         {
-                            edmEnumType.AddMember(new EdmEnumMember(edmEnumType, enumNames[i], null));
+                            int intValue = (int)enumValues.GetValue(i);
+                            edmEnumType.AddMember(new EdmEnumMember(edmEnumType, enumNames[i], new EdmEnumMemberValue(intValue)));
                         }
 
                         _registeredEnums.Add(propertyType, edmEnumType);
                         AddElement(edmEnumType);
                     }
 
-                    EdmStructuralProperty edmProp = edmEntityType.AddStructuralProperty(GetEntityPropertName(propertyInfo), new EdmEnumTypeReference(edmEnumType, false));
+                    EdmStructuralProperty edmProp = edmEntityType.AddStructuralProperty(GetEntityPropertyName(propertyInfo), new EdmEnumTypeReference(edmEnumType, false));
                     this.SetAnnotationValue(edmProp, new ClrPropertyInfoAnnotation(propertyInfo));
                 }
 
                 IEdmPrimitiveType edmPrimitiveType = EdmTypeMap.GetEdmPrimitiveType(propertyType);
                 if (edmPrimitiveType != null)
                 {
-                    EdmStructuralProperty edmProp = edmEntityType.AddStructuralProperty(GetEntityPropertName(propertyInfo), edmPrimitiveType.PrimitiveKind);
+                    EdmStructuralProperty edmProp = edmEntityType.AddStructuralProperty(GetEntityPropertyName(propertyInfo), edmPrimitiveType.PrimitiveKind);
                     this.SetAnnotationValue(edmProp, new ClrPropertyInfoAnnotation(propertyInfo));
                 }
             }
@@ -260,7 +261,7 @@
 
                     var navigationProperty = new EdmNavigationPropertyInfo
                     {
-                        Name = GetEntityPropertName(masterProperty.Key),
+                        Name = GetEntityPropertyName(masterProperty.Key),
                         Target = edmTargetEntityType,
                         TargetMultiplicity = allowNull
                             ? EdmMultiplicity.ZeroOrOne
@@ -304,7 +305,7 @@
 
                     var navigationProperty = new EdmNavigationPropertyInfo
                     {
-                        Name = GetEntityPropertName(detailProperty.Key),
+                        Name = GetEntityPropertyName(detailProperty.Key),
                         Target = edmTargetEntityType,
                         TargetMultiplicity = EdmMultiplicity.Many
                     };
@@ -520,7 +521,7 @@
         /// </summary>
         /// <param name="type">Тип</param>
         /// <returns></returns>
-        private string GetEntityPropertName(PropertyInfo prop)
+        private string GetEntityPropertyName(PropertyInfo prop)
         {
             var name = prop.Name;
             if (name != KeyPropertyName && prop.DeclaringType != typeof(DataObject) && EdmModelBuilder != null && EdmModelBuilder.EntityPropertyNameBuilder != null)
@@ -673,7 +674,8 @@
 
                 edmAction = new EdmAction(DefaultNamespace, action.Name, returnEdmTypeReference);
                 edmAction.AddParameter("bindingParameter", returnEdmTypeReference);
-                entityContainer.AddActionImport(edmAction);
+                //-solo- entityContainer.AddActionImport(action.Name, edmAction, new EdmEntitySetReferenceExpression(GetEdmEntitySet(returnEntityType)));
+                entityContainer.AddActionImport(edmAction); //-solo- is vodovoz variant, may be errory
             }
 
             AddElement(edmAction);
@@ -728,7 +730,8 @@
 
                 edmFunction = new EdmFunction(DefaultNamespace, function.Name, returnEdmTypeReference, true, null, true);
                 edmFunction.AddParameter("bindingParameter", returnEdmTypeReference);
-                entityContainer.AddFunctionImport(edmFunction);
+                //-solo- entityContainer.AddFunctionImport(function.Name, edmFunction, new EdmEntitySetReferenceExpression(GetEdmEntitySet(returnEntityType)), true);
+                entityContainer.AddFunctionImport(edmFunction); //-solo- is vodovoz variant, may be errory
             }
 
             AddElement(edmFunction);
