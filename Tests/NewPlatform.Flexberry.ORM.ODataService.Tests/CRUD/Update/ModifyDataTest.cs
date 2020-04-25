@@ -1024,6 +1024,71 @@
         /// Test update details with Aggregator.
         /// </summary>
         [Fact]
+        public void UpdateDetailWithAggregatorTest2()
+        {
+            ActODataService(async (args) =>
+            {
+                var страна = new Страна { Название = "Медведия" };
+                var лес = new Лес { Название = "Зеленый", Страна = страна };
+                var медведь = new Медведь { ПорядковыйНомер = 1, ЛесОбитания = лес };
+
+                args.DataService.UpdateObject(медведь);
+
+                var берлога = new Берлога { Наименование = "Первая", Комфортность = 100 };
+
+                var medvView = new View { DefineClassType = typeof(Медведь) };
+                medvView.AddProperties(
+                    Information.ExtractPropertyPath<Медведь>(m => m.__PrimaryKey));
+
+                var berlView = new View { DefineClassType = typeof(Берлога) };
+                berlView.AddProperties(
+                    Information.ExtractPropertyPath<Берлога>(b => b.Наименование),
+                    Information.ExtractPropertyPath<Берлога>(b => b.Комфортность),
+                    Information.ExtractPropertyPath<Берлога>(b => b.Медведь));
+
+                const string baseUrl = "http://localhost/odata";
+
+                string requestJsonDataBerloga = берлога.ToJson(berlView, args.Token.Model);
+                var objJsonBerloga = DataObjectDictionary.Parse(requestJsonDataBerloga, berlView, args.Token.Model);
+                objJsonBerloga.Remove("Медведь");
+
+                objJsonBerloga.Add(
+                    $"{nameof(Берлога.Медведь)}@odata.bind",
+                    $"{args.Token.Model.GetEdmEntitySet(typeof(Медведь)).Name}({((KeyGuid)медведь.__PrimaryKey).Guid:D})");
+
+                requestJsonDataBerloga = objJsonBerloga.Serialize();
+
+                string requestJsonDataMedv = медведь.ToJson(medvView, args.Token.Model);
+                var objJsonMedv = DataObjectDictionary.Parse(requestJsonDataMedv, medvView, args.Token.Model);
+                objJsonMedv.Add(
+                    $"{nameof(Медведь.ЛесОбитания)}@odata.bind",
+                    $"{args.Token.Model.GetEdmEntitySet(typeof(Лес)).Name}({((KeyGuid)лес.__PrimaryKey).Guid:D})");
+                requestJsonDataMedv = objJsonMedv.Serialize();
+
+                string[] changesets =
+                {
+                    CreateChangeset(
+                        $"{baseUrl}/{args.Token.Model.GetEdmEntitySet(typeof(Медведь)).Name}",
+                        requestJsonDataMedv,
+                        медведь),
+                    CreateChangeset(
+                        $"{baseUrl}/{args.Token.Model.GetEdmEntitySet(typeof(Берлога)).Name}",
+                        requestJsonDataBerloga,
+                        берлога)
+                };
+
+                HttpRequestMessage batchRequest = CreateBatchRequest(baseUrl, changesets);
+                using (HttpResponseMessage response = args.HttpClient.SendAsync(batchRequest).Result)
+                {
+                    CheckODataBatchResponseStatusCode(response, new[] { HttpStatusCode.OK, HttpStatusCode.Created });
+                }
+            });
+        }
+
+        /// <summary>
+        /// Test update details with Aggregator.
+        /// </summary>
+        [Fact]
         public void UpdateSecondDetailWithAggregatorTest()
         {
             ActODataService(async (args) =>

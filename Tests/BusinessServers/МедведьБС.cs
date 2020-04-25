@@ -16,6 +16,7 @@ namespace NewPlatform.Flexberry.ORM.ODataService.Tests
 
     // *** Start programmer edit section *** (Using statements)
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using ICSSoft.STORMNET;
 
@@ -43,6 +44,12 @@ namespace NewPlatform.Flexberry.ORM.ODataService.Tests
         public virtual ICSSoft.STORMNET.DataObject[] OnUpdateМедведь(NewPlatform.Flexberry.ORM.ODataService.Tests.Медведь UpdatedObject)
         {
             // *** Start programmer edit section *** (OnUpdateМедведь)
+            if (UpdatedObject.GetStatus() == ObjectStatus.Altered && !UpdatedObject.CheckLoadedProperty(x => x.ЛесОбитания.Страна))
+            {
+                string message = "Страна не загружена";
+                throw new Exception(message);
+            }
+
             var updatedObjects = new List<DataObject>();
             if (UpdatedObject.GetStatus() == ObjectStatus.Created)
             {
